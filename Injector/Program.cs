@@ -5,6 +5,7 @@ namespace Injector
 {
     internal class Program
     {
+        private static string _template = "public class TemporaryClass {{ {0} }}"; 
         static void Main(string[] args)
         {
             if (args.Length != 4)
@@ -19,25 +20,21 @@ namespace Injector
                 return;
             }
 
+            if (!File.Exists(args[3]))
+            {
+                Console.WriteLine("Code file does not exist.");
+                return;
+            }
+
             string originalAssemblyPath = args[0];
             string modifiedAssemblyPath = args[1];
+            string methodName = args[2];
+            string codeFilePath = args[3];
 
             AssemblyInjector injector = new AssemblyInjector(originalAssemblyPath);
-            string methodCode = @"
-public class DummyClass
-{
-    public static void NewMethod()
-    {
-    try { 
-        string a = ""bb""; 
-        System.Console.WriteLine(a);
-    }catch{}
+            string code = string.Format(_template, File.ReadAllText(codeFilePath));
 
-        
-    }
-}";
-
-            injector.InjectMethod(targetTypeName: "Class1", methodCode: methodCode, args[2], args[3]);
+            injector.InjectMethod(targetTypeName: "Class1", methodCode: code, "TemporaryClass", methodName);
             injector.SaveModifiedAssembly(modifiedAssemblyPath);
 
         }

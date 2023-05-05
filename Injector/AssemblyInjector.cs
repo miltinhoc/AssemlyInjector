@@ -29,6 +29,22 @@ namespace Injector
             {
                 InjectMethod(tempMethod, targetType);
             }
+            else
+            {
+                throw new NullReferenceException();
+            }
+        }
+
+        public void RemoveTemporaryResource()
+        {
+            for (int i = 0; i < _originalAssembly.MainModule.Resources.Count; i++)
+            {
+                if (_originalAssembly.MainModule.Resources[i].Name == "TempAssembly")
+                {
+                    _originalAssembly.MainModule.Resources.RemoveAt(i);
+                    break;
+                }
+            }
         }
 
         public void SaveModifiedAssembly(string modifiedAssemblyPath)
