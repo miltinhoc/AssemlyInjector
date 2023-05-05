@@ -19,10 +19,10 @@ namespace Injector
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
-        public void InjectMethod(string targetTypeName, string methodCode)
+        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName)
         {
             var tempAssembly = CompileMethod(methodCode);
-            var tempMethod = tempAssembly.MainModule.GetType("DummyClass").Methods.FirstOrDefault(m => m.Name == "NewMethod");
+            var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
 
             if (tempMethod != null && targetType != null)

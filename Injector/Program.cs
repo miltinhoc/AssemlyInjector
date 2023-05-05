@@ -1,10 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace Injector
 {
@@ -12,8 +7,20 @@ namespace Injector
     {
         static void Main(string[] args)
         {
-            string originalAssemblyPath = "SimpleDll.dll";
-            string modifiedAssemblyPath = "ModifiedAssembly.dll";
+            if (args.Length != 2)
+            {
+                Console.WriteLine("Missing arguments.");
+                return;
+            }
+
+            if (!File.Exists(args[0]))
+            {
+                Console.WriteLine("Target Assembly does not exist.");
+                return;
+            }
+
+            string originalAssemblyPath = args[0];
+            string modifiedAssemblyPath = args[1];
 
             AssemblyInjector injector = new AssemblyInjector(originalAssemblyPath);
             string methodCode = @"
@@ -31,7 +38,7 @@ public class DummyClass
     }
 }";
 
-            injector.InjectMethod("Class1", methodCode);
+            injector.InjectMethod(targetTypeName: "Class1", methodCode: methodCode, "DummyClass", "NewMethod");
             injector.SaveModifiedAssembly(modifiedAssemblyPath);
 
         }
