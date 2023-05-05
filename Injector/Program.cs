@@ -7,7 +7,7 @@ namespace Injector
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length != 4)
             {
                 Console.WriteLine("Missing arguments.");
                 return;
@@ -31,14 +31,13 @@ public class DummyClass
     try { 
         string a = ""bb""; 
         System.Console.WriteLine(a);
-
     }catch{}
 
         
     }
 }";
 
-            injector.InjectMethod(targetTypeName: "Class1", methodCode: methodCode, "DummyClass", "NewMethod");
+            injector.InjectMethod(targetTypeName: "Class1", methodCode: methodCode, args[2], args[3]);
             injector.SaveModifiedAssembly(modifiedAssemblyPath);
 
         }
