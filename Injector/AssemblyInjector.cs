@@ -29,10 +29,6 @@ namespace Injector
             {
                 InjectMethod(tempMethod, targetType);
             }
-            else
-            {
-                throw new NullReferenceException();
-            }
         }
 
         public void RemoveTemporaryResource()

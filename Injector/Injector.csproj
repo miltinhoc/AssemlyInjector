@@ -47,7 +47,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-   <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -260,6 +260,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInjector.cs" />
+    <Compile Include="CommandLine\CommandLineProcessor.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
