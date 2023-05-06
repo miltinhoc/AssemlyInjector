@@ -1,10 +1,13 @@
-﻿using System.IO;
+﻿using Microsoft.CodeAnalysis;
+using System.IO;
+using System.Text;
 
 namespace Injector
 {
     internal class Program
     {
-        private static string _template = "public class TemporaryClass {{ {0} }}";
+        private static string _className = "TemporaryClass";
+        private static string _template = "public class {0} {{ {1} }}";
 
         static void Main(string[] args)
         {
@@ -13,10 +16,10 @@ namespace Injector
             if (processor.ParseArguments(args))
             {
                 AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey("-i"));
-                string code = string.Format(_template, File.ReadAllText(processor.GetValueFromKey("-c")));
+                string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey("-c")));
 
-                injector.InjectMethod(targetTypeName: "Class1", methodCode: code, "TemporaryClass", processor.GetValueFromKey("-m"));
-                injector.InjectNewMethodCallInExistingMethod("Class1", "Bro", processor.GetValueFromKey("-m"));
+                injector.InjectMethod(targetTypeName: "SetupLogLogger", methodCode: code, _className, processor.GetValueFromKey("-m"), OutputKind.ConsoleApplication);
+                injector.InjectNewMethodCallInExistingMethod("SetupLogLogger", "Write", processor.GetValueFromKey("-m"), false);
                 injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
             }
         }

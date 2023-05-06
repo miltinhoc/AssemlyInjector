@@ -19,9 +19,9 @@ namespace Injector
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
-        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName)
+        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
-            var tempAssembly = CompileMethod(methodCode);
+            var tempAssembly = CompileMethod(methodCode, outputKind);
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
 
@@ -51,9 +51,11 @@ namespace Injector
             }
         }
 
-        private AssemblyDefinition CompileMethod(string methodCode)
+        private AssemblyDefinition CompileMethod(string methodCode, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(methodCode);
+            var compilationOptions = new CSharpCompilationOptions(outputKind == OutputKind.ConsoleApplication ? OutputKind.DynamicallyLinkedLibrary : outputKind);
+
             var compilation = CSharpCompilation.Create("TempAssembly",
                 new[] { syntaxTree },
                 new[]
@@ -61,14 +63,13 @@ namespace Injector
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
                 },
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                compilationOptions);
 
             MemoryStream ms = new MemoryStream();
             var emitResult = compilation.Emit(ms);
 
             if (!emitResult.Success)
             {
-                // Handle compilation errors
                 foreach (var diagnostic in emitResult.Diagnostics)
                 {
                     Console.WriteLine(diagnostic);
@@ -85,6 +86,12 @@ namespace Injector
             var newMethod = new MethodDefinition(tempMethod.Name,
                 tempMethod.Attributes,
                 _originalAssembly.MainModule.ImportReference(tempMethod.ReturnType));
+
+            foreach (var parameter in tempMethod.Parameters)
+            {
+                var newParameter = new ParameterDefinition(parameter.Name, parameter.Attributes, _originalAssembly.MainModule.ImportReference(parameter.ParameterType));
+                newMethod.Parameters.Add(newParameter);
+            }
 
             var ilProcessor = newMethod.Body.GetILProcessor();
 
@@ -126,7 +133,7 @@ namespace Injector
             targetType.Methods.Add(newMethod);
         }
 
-        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string existingMethodName, string newMethodName)
+        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string existingMethodName, string newMethodName, bool passArguments = false)
         {
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
 
@@ -149,12 +156,47 @@ namespace Injector
             }
 
             var ilProcessor = existingMethod.Body.GetILProcessor();
-            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
             var firstInstruction = existingMethod.Body.Instructions.First();
 
+            if (passArguments)
+            {
+
+                var loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
+                ilProcessor.InsertBefore(firstInstruction, loadArgInstruction);
+
+                //// Load each argument onto the stack based on the method signature
+                //for (int argIndex = 0; argIndex < existingMethod.Parameters.Count; argIndex++)
+                //{
+                //    Instruction loadArgInstruction;
+
+                //    switch (argIndex)
+                //    {
+                //        case 0:
+                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
+                //            break;
+                //        case 1:
+                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_1);
+                //            break;
+                //        case 2:
+                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_2);
+                //            break;
+                //        case 3:
+                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_3);
+                //            break;
+                //        default:
+                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_S, (byte)argIndex);
+                //            break;
+                //    }
+
+                //    ilProcessor.InsertBefore(firstInstruction, loadArgInstruction);
+                //    firstInstruction = loadArgInstruction;
+                //}
+            }
+
+            // Call the injected method
+            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
             ilProcessor.InsertBefore(firstInstruction, callInstruction);
         }
-
 
         private static Instruction GetCorrespondingInstruction(Mono.Collections.Generic.Collection<Instruction> newInstructions, Mono.Collections.Generic.Collection<Instruction> originalInstructions, Instruction originalInstruction)
         {
