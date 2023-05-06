@@ -4,10 +4,6 @@ namespace Injector.CommandLine
 {
     public class CommandLineProcessor
     {
-        public string OriginalAssemblyPath { get; set; }
-        public string ModifiedAssemblyPath { get; set; }
-        public string MethodName { get; set; }
-        public string CodeFilePath { get; set; }
         public Dictionary<string, string> ArgumentList { get; set; }
 
         public CommandLineProcessor() => ArgumentList = new Dictionary<string, string>();
