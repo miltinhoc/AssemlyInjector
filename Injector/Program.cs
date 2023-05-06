@@ -18,8 +18,8 @@ namespace Injector
                 AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey("-i"));
                 string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey("-c")));
 
-                injector.InjectMethod(targetTypeName: "SetupLogLogger", methodCode: code, _className, processor.GetValueFromKey("-m"), OutputKind.ConsoleApplication);
-                injector.InjectNewMethodCallInExistingMethod("SetupLogLogger", "Write", processor.GetValueFromKey("-m"), false);
+                injector.InjectMethod(targetTypeName: "Program", methodCode: code, _className, processor.GetValueFromKey("-m"), OutputKind.ConsoleApplication);
+                injector.InjectNewMethodCallInExistingMethod("Program", "ProcessStart", processor.GetValueFromKey("-m"), false);
                 injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
             }
         }

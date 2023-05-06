@@ -156,46 +156,66 @@ namespace Injector
             }
 
             var ilProcessor = existingMethod.Body.GetILProcessor();
-            var firstInstruction = existingMethod.Body.Instructions.First();
 
-            if (passArguments)
+            var lastInstruction = existingMethod.Body.Instructions.Last();
+            var retInstruction = existingMethod.Body.Instructions.FirstOrDefault(); //OrDefault(i => i.OpCode == OpCodes.Ret)
+            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
+
+            if (retInstruction == null)
             {
+                throw new InvalidOperationException("The method does not have a 'ret' instruction.");
+            }
 
-                var loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
-                ilProcessor.InsertBefore(firstInstruction, loadArgInstruction);
+            foreach (var handler in existingMethod.Body.ExceptionHandlers)
+            {
+                if (handler.HandlerType == ExceptionHandlerType.Catch && handler.HandlerEnd == lastInstruction)
+                {
+                    handler.HandlerEnd = callInstruction;
+                }
+            }
 
-                //// Load each argument onto the stack based on the method signature
-                //for (int argIndex = 0; argIndex < existingMethod.Parameters.Count; argIndex++)
-                //{
-                //    Instruction loadArgInstruction;
-
-                //    switch (argIndex)
-                //    {
-                //        case 0:
-                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
-                //            break;
-                //        case 1:
-                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_1);
-                //            break;
-                //        case 2:
-                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_2);
-                //            break;
-                //        case 3:
-                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_3);
-                //            break;
-                //        default:
-                //            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_S, (byte)argIndex);
-                //            break;
-                //    }
-
-                //    ilProcessor.InsertBefore(firstInstruction, loadArgInstruction);
-                //    firstInstruction = loadArgInstruction;
-                //}
+            foreach (var instruction in existingMethod.Body.Instructions)
+            {
+                if (instruction.OpCode == OpCodes.Leave_S && instruction.Operand == lastInstruction)
+                {
+                    instruction.Operand = callInstruction;
+                }
             }
 
             // Call the injected method
-            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
-            ilProcessor.InsertBefore(firstInstruction, callInstruction);
+            ilProcessor.InsertBefore(lastInstruction, callInstruction);
+            //lastInstruction = callInstruction;
+
+            if (passArguments)
+            {
+                // Load each argument onto the stack based on the method signature
+                /*for (int argIndex = existingMethod.Parameters.Count - 1; argIndex >= 0; argIndex--)
+                {
+                    Instruction loadArgInstruction;
+
+                    switch (argIndex)
+                    {
+                        case 0:
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
+                            break;
+                        case 1:
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_1);
+                            break;
+                        case 2:
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_2);
+                            break;
+                        case 3:
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_3);
+                            break;
+                        default:
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_S, (byte)argIndex);
+                            break;
+                    }
+
+                    ilProcessor.InsertBefore(lastInstruction, loadArgInstruction);
+                    lastInstruction = loadArgInstruction;
+                }*/
+            }
         }
 
         private static Instruction GetCorrespondingInstruction(Mono.Collections.Generic.Collection<Instruction> newInstructions, Mono.Collections.Generic.Collection<Instruction> originalInstructions, Instruction originalInstruction)
