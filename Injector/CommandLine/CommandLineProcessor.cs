@@ -1,4 +1,6 @@
-﻿namespace Injector.CommandLine
+﻿using System.Collections.Generic;
+
+namespace Injector.CommandLine
 {
     public class CommandLineProcessor
     {
@@ -6,39 +8,20 @@
         public string ModifiedAssemblyPath { get; set; }
         public string MethodName { get; set; }
         public string CodeFilePath { get; set; }
+        public Dictionary<string, string> ArgumentList { get; set; }
+
+        public CommandLineProcessor() => ArgumentList = new Dictionary<string, string>();
 
         public bool ParseArguments(string[] args)
         {
             if (args.Length != 8) return false;
 
             for (int i = 0; i < args.Length; i += 2)
-            {
-                switch (args[i])
-                {
-                    case "-m":
-                        MethodName = args[i + 1];
-                        break;
-                    case "-c":
-                        CodeFilePath = args[i + 1];
-                        break;
-                    case "-i":
-                        OriginalAssemblyPath = args[i + 1];
-                        break;
-                    case "-o":
-                        ModifiedAssemblyPath = args[i + 1];
-                        break;
-                    default:
-                        //Console.WriteLine($" [*] Invalid argument(s).\n{_usage}");
-                        return false;
-                }
-            }
+                ArgumentList.Add(args[i], args[i + 1]);
 
-            if (string.IsNullOrEmpty(CodeFilePath) || string.IsNullOrEmpty(OriginalAssemblyPath) || string.IsNullOrEmpty(ModifiedAssemblyPath) || string.IsNullOrEmpty(MethodName) ) 
-            {
-                return false;
-            }
-
-            return true;
+            return (ArgumentList.ContainsKey("-m") && ArgumentList.ContainsKey("-c") && ArgumentList.ContainsKey("-i") && ArgumentList.ContainsKey("-o"));
         }
+
+        public string GetValueFromKey(string key) => ArgumentList[key];
     }
 }

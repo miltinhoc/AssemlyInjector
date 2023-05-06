@@ -12,11 +12,11 @@ namespace Injector
 
             if (processor.ParseArguments(args))
             {
-                AssemblyInjector injector = new AssemblyInjector(processor.OriginalAssemblyPath);
-                string code = string.Format(_template, File.ReadAllText(processor.CodeFilePath));
+                AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey("-i"));
+                string code = string.Format(_template, File.ReadAllText(processor.GetValueFromKey("-c")));
 
-                injector.InjectMethod(targetTypeName: "Class1", methodCode: code, "TemporaryClass", processor.MethodName);
-                injector.SaveModifiedAssembly(processor.ModifiedAssemblyPath);
+                injector.InjectMethod(targetTypeName: "Class1", methodCode: code, "TemporaryClass", processor.GetValueFromKey("-m"));
+                injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
             }
         }
     }
