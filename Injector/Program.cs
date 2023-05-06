@@ -4,7 +4,8 @@ namespace Injector
 {
     internal class Program
     {
-        private static string _template = "public class TemporaryClass {{ {0} }}"; 
+        private static string _template = "public class TemporaryClass {{ {0} }}";
+
         static void Main(string[] args)
         {
             CommandLine.CommandLineProcessor processor = new CommandLine.CommandLineProcessor();
