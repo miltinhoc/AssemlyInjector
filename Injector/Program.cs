@@ -16,6 +16,7 @@ namespace Injector
                 string code = string.Format(_template, File.ReadAllText(processor.GetValueFromKey("-c")));
 
                 injector.InjectMethod(targetTypeName: "Class1", methodCode: code, "TemporaryClass", processor.GetValueFromKey("-m"));
+                injector.InjectNewMethodCallInExistingMethod("Class1", "Bro", processor.GetValueFromKey("-m"));
                 injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
             }
         }

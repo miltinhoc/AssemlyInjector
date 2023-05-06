@@ -126,6 +126,36 @@ namespace Injector
             targetType.Methods.Add(newMethod);
         }
 
+        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string existingMethodName, string newMethodName)
+        {
+            var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
+
+            if (targetType == null)
+            {
+                throw new InvalidOperationException($"Type '{targetTypeName}' not found in the assembly.");
+            }
+
+            var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+            var newMethod = targetType.Methods.FirstOrDefault(m => m.Name == newMethodName);
+
+            if (existingMethod == null)
+            {
+                throw new InvalidOperationException($"Method '{existingMethodName}' not found in the type '{targetTypeName}'.");
+            }
+
+            if (newMethod == null)
+            {
+                throw new InvalidOperationException($"Method '{newMethodName}' not found in the type '{targetTypeName}'.");
+            }
+
+            var ilProcessor = existingMethod.Body.GetILProcessor();
+            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
+            var firstInstruction = existingMethod.Body.Instructions.First();
+
+            ilProcessor.InsertBefore(firstInstruction, callInstruction);
+        }
+
+
         private static Instruction GetCorrespondingInstruction(Mono.Collections.Generic.Collection<Instruction> newInstructions, Mono.Collections.Generic.Collection<Instruction> originalInstructions, Instruction originalInstruction)
         {
             if (originalInstruction == null)
