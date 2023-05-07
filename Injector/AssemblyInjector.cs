@@ -56,12 +56,13 @@ namespace Injector
             var syntaxTree = CSharpSyntaxTree.ParseText(methodCode);
             var compilationOptions = new CSharpCompilationOptions(outputKind == OutputKind.ConsoleApplication ? OutputKind.DynamicallyLinkedLibrary : outputKind);
 
-            var compilation = CSharpCompilation.Create("TempAssembly",
-                new[] { syntaxTree },
+            var compilation = CSharpCompilation.Create("TempAssembly", new[] { syntaxTree },
                 new[]
                 {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Windows.Forms.Form).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Drawing.Image).Assembly.Location),
                 },
                 compilationOptions);
 
@@ -158,7 +159,7 @@ namespace Injector
             var ilProcessor = existingMethod.Body.GetILProcessor();
 
             var lastInstruction = existingMethod.Body.Instructions.Last();
-            var retInstruction = existingMethod.Body.Instructions.FirstOrDefault(); //OrDefault(i => i.OpCode == OpCodes.Ret)
+            var retInstruction = existingMethod.Body.Instructions.FirstOrDefault();
             var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
 
             if (retInstruction == null)
@@ -182,9 +183,7 @@ namespace Injector
                 }
             }
 
-            // Call the injected method
             ilProcessor.InsertBefore(lastInstruction, callInstruction);
-            //lastInstruction = callInstruction;
 
             if (passArguments)
             {
@@ -228,6 +227,5 @@ namespace Injector
             int index = originalInstructions.IndexOf(originalInstruction);
             return newInstructions[index];
         }
-
     }
 }
