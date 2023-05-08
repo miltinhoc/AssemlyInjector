@@ -19,7 +19,7 @@ namespace Injector
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
-        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, string existingMethodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
             var tempAssembly = CompileMethod(methodCode, outputKind);
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
@@ -27,7 +27,7 @@ namespace Injector
 
             if (tempMethod != null && targetType != null)
             {
-                InjectMethod(tempMethod, targetType);
+                InjectMethod(tempMethod, targetType, existingMethodName);
             }
         }
 
@@ -82,7 +82,7 @@ namespace Injector
             return AssemblyDefinition.ReadAssembly(ms);
         }
 
-        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType)
+        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, string existingMethodName)
         {
             var newMethod = new MethodDefinition(tempMethod.Name,
                 tempMethod.Attributes,
@@ -131,6 +131,13 @@ namespace Injector
                 });
             }
 
+            var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+
+            for (int i = 0; i < existingMethod.Parameters.Count; i++)
+            {
+                newMethod.Parameters.Add(existingMethod.Parameters[i]);
+            }
+
             targetType.Methods.Add(newMethod);
         }
 
@@ -157,45 +164,31 @@ namespace Injector
             }
 
             var ilProcessor = existingMethod.Body.GetILProcessor();
-
             var lastInstruction = existingMethod.Body.Instructions.Last();
-            var retInstruction = existingMethod.Body.Instructions.FirstOrDefault();
-            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
-
-            if (retInstruction == null)
+            
+            if (lastInstruction == null)
             {
                 throw new InvalidOperationException("The method does not have a 'ret' instruction.");
             }
 
-            foreach (var handler in existingMethod.Body.ExceptionHandlers)
-            {
-                if (handler.HandlerType == ExceptionHandlerType.Catch && handler.HandlerEnd == lastInstruction)
-                {
-                    handler.HandlerEnd = callInstruction;
-                }
-            }
-
-            foreach (var instruction in existingMethod.Body.Instructions)
-            {
-                if (instruction.OpCode == OpCodes.Leave_S && instruction.Operand == lastInstruction)
-                {
-                    instruction.Operand = callInstruction;
-                }
-            }
-
-            ilProcessor.InsertBefore(lastInstruction, callInstruction);
+            Instruction firstInserted = null;
 
             if (passArguments)
             {
-                // Load each argument onto the stack based on the method signature
-                /*for (int argIndex = existingMethod.Parameters.Count - 1; argIndex >= 0; argIndex--)
+                if (existingMethod.Parameters.Count == 0)
+                    return;
+
+                Instruction last;
+
+                for (int i = existingMethod.Parameters.Count - 1; i >= 0; i--)
                 {
                     Instruction loadArgInstruction;
 
-                    switch (argIndex)
+                    switch (i)
                     {
                         case 0:
                             loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_0);
+                            firstInserted = loadArgInstruction;
                             break;
                         case 1:
                             loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_1);
@@ -207,13 +200,38 @@ namespace Injector
                             loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_3);
                             break;
                         default:
-                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_S, (byte)argIndex);
+                            loadArgInstruction = ilProcessor.Create(OpCodes.Ldarg_S, (byte)i);
                             break;
                     }
 
                     ilProcessor.InsertBefore(lastInstruction, loadArgInstruction);
-                    lastInstruction = loadArgInstruction;
-                }*/
+                    last = loadArgInstruction;
+                }
+                firstInserted = ilProcessor.Create(OpCodes.Call, newMethod);
+                ilProcessor.InsertBefore(lastInstruction, firstInserted);
+            }
+            else
+            {
+                firstInserted = ilProcessor.Create(OpCodes.Call, newMethod);
+                ilProcessor.InsertBefore(lastInstruction, firstInserted);
+            }
+
+            var callInstruction = ilProcessor.Create(OpCodes.Call, newMethod);
+            
+            foreach (var handler in existingMethod.Body.ExceptionHandlers)
+            {
+                if (handler.HandlerType == ExceptionHandlerType.Catch && handler.HandlerEnd == lastInstruction)
+                {
+                    handler.HandlerEnd = firstInserted;
+                }
+            }
+
+            foreach (var instruction in existingMethod.Body.Instructions)
+            {
+                if (instruction.OpCode == OpCodes.Leave_S && instruction.Operand == lastInstruction)
+                {
+                    instruction.Operand = firstInserted;
+                }
             }
         }
 

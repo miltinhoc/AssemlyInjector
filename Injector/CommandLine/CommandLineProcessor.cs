@@ -10,12 +10,16 @@ namespace Injector.CommandLine
 
         public bool ParseArguments(string[] args)
         {
-            if (args.Length != 8) return false;
+            if (args.Length != 10) return false;
 
             for (int i = 0; i < args.Length; i += 2)
                 ArgumentList.Add(args[i], args[i + 1]);
 
-            return (ArgumentList.ContainsKey("-m") && ArgumentList.ContainsKey("-c") && ArgumentList.ContainsKey("-i") && ArgumentList.ContainsKey("-o"));
+            return (ArgumentList.ContainsKey("-m") 
+                && ArgumentList.ContainsKey("-c") 
+                && ArgumentList.ContainsKey("-i") 
+                && ArgumentList.ContainsKey("-o") 
+                && ArgumentList.ContainsKey("-t"));
         }
 
         public string GetValueFromKey(string key) => ArgumentList[key];
