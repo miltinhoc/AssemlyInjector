@@ -27,7 +27,19 @@ namespace Injector
 
             if (tempMethod != null && targetType != null)
             {
-                InjectMethod(tempMethod, targetType, existingMethodName);
+                InjectMethod(tempMethod, targetType, true, existingMethodName);
+            }
+        }
+
+        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        {
+            var tempAssembly = CompileMethod(methodCode, outputKind);
+            var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
+            var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
+
+            if (tempMethod != null && targetType != null)
+            {
+                InjectMethod(tempMethod, targetType);
             }
         }
 
@@ -82,7 +94,7 @@ namespace Injector
             return AssemblyDefinition.ReadAssembly(ms);
         }
 
-        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, string existingMethodName)
+        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, bool injectCall = false, string existingMethodName = "")
         {
             var newMethod = new MethodDefinition(tempMethod.Name,
                 tempMethod.Attributes,
@@ -131,11 +143,14 @@ namespace Injector
                 });
             }
 
-            var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
-
-            for (int i = 0; i < existingMethod.Parameters.Count; i++)
+            if (injectCall)
             {
-                newMethod.Parameters.Add(existingMethod.Parameters[i]);
+                var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+
+                for (int i = 0; i < existingMethod.Parameters.Count; i++)
+                {
+                    newMethod.Parameters.Add(existingMethod.Parameters[i]);
+                }
             }
 
             targetType.Methods.Add(newMethod);
@@ -180,7 +195,7 @@ namespace Injector
 
                 Instruction last;
 
-                for (int i = existingMethod.Parameters.Count - 1; i >= 0; i--)
+                for (int i = 0; i < existingMethod.Parameters.Count; i++)
                 {
                     Instruction loadArgInstruction;
 

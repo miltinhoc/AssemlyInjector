@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using System;
 using System.IO;
 
 namespace Injector
@@ -18,8 +17,8 @@ namespace Injector
                 AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey("-i"));
                 string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey("-c")));
 
-                injector.InjectMethod(targetTypeName: processor.GetValueFromKey("-t"), methodCode: code, _className, processor.GetValueFromKey("-m"), "Bro", OutputKind.ConsoleApplication);
-                injector.InjectNewMethodCallInExistingMethod(processor.GetValueFromKey("-t"), "Bro", processor.GetValueFromKey("-m"), true);
+                injector.InjectMethod(targetTypeName: processor.GetValueFromKey("-t"), methodCode: code, _className, processor.GetValueFromKey("-m"), OutputKind.ConsoleApplication);
+                injector.InjectNewMethodCallInExistingMethod(processor.GetValueFromKey("-t"), "Bro", processor.GetValueFromKey("-m"), false);
                 injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
             }
         }
