@@ -20,18 +20,6 @@ namespace Injector
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
-        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, string existingMethodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
-        {
-            var tempAssembly = CompileMethod(methodCode, outputKind);
-            var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
-            var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
-            //var t = _originalAssembly.EntryPoint;
-            if (tempMethod != null && targetType != null)
-            {
-                InjectMethod(tempMethod, targetType, true, existingMethodName);
-            }
-        }
-
         public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
             var tempAssembly = CompileMethod(methodCode, outputKind);
@@ -53,18 +41,6 @@ namespace Injector
             if (tempMethod != null && targetType != null)
             {
                 InjectMethod(tempMethod, targetType);
-            }
-        }
-
-        public void RemoveTemporaryResource()
-        {
-            for (int i = 0; i < _originalAssembly.MainModule.Resources.Count; i++)
-            {
-                if (_originalAssembly.MainModule.Resources[i].Name == "TempAssembly")
-                {
-                    _originalAssembly.MainModule.Resources.RemoveAt(i);
-                    break;
-                }
             }
         }
 
@@ -190,7 +166,6 @@ namespace Injector
                 throw new InvalidOperationException($"Type '{targetTypeName}' not found in the assembly.");
             }
 
-            //var existingMethod = _originalAssembly.EntryPoint;//targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
             var newMethod = targetType.Methods.FirstOrDefault(m => m.Name == newMethodName);
 
             if (existingMethod == null)
