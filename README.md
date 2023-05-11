@@ -21,3 +21,17 @@ Inject a Method on an existing Type of the assembly and call it on a existing Me
 ```bash
 Injector.exe -code code.cs -input ConsoleApp1.exe -output a.exe -method NewMethod -type Program -injectcall -injectonmethod Verify
 ```
+
+code.cs file example:
+
+```csharp
+
+public static void NewMethod()
+{
+	int count = 0;
+        Console.WriteLine(count.ToString());    
+}
+```
+
+## Todo
+Add a way to understand what references are necessary to add depending on the code passed. (maybe with a configuration file?)
