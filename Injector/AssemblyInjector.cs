@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Mono.Cecil.Cil;
+using Mono.Collections.Generic;
 
 namespace Injector
 {
@@ -24,7 +25,7 @@ namespace Injector
             var tempAssembly = CompileMethod(methodCode, outputKind);
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
-
+            //var t = _originalAssembly.EntryPoint;
             if (tempMethod != null && targetType != null)
             {
                 InjectMethod(tempMethod, targetType, true, existingMethodName);
@@ -36,6 +37,18 @@ namespace Injector
             var tempAssembly = CompileMethod(methodCode, outputKind);
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
+
+            if (tempMethod != null && targetType != null)
+            {
+                InjectMethod(tempMethod, targetType);
+            }
+        }
+
+        public void InjectMethodOnEntryPoint(string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        {
+            var tempAssembly = CompileMethod(methodCode, outputKind);
+            var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
+            var targetType = _originalAssembly.EntryPoint.DeclaringType;
 
             if (tempMethod != null && targetType != null)
             {
@@ -156,16 +169,28 @@ namespace Injector
             targetType.Methods.Add(newMethod);
         }
 
-        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string existingMethodName, string newMethodName, bool passArguments = false)
+        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string newMethodName, string existingMethodName, bool passArguments = false, bool entryPoint = false)
         {
-            var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
+            TypeDefinition targetType;
+            MethodDefinition existingMethod;
+
+            if (entryPoint)
+            {
+                targetType = _originalAssembly.EntryPoint.DeclaringType;
+                existingMethod = _originalAssembly.EntryPoint;
+            }
+            else
+            {
+                targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
+                existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+            }
 
             if (targetType == null)
             {
                 throw new InvalidOperationException($"Type '{targetTypeName}' not found in the assembly.");
             }
 
-            var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+            //var existingMethod = _originalAssembly.EntryPoint;//targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
             var newMethod = targetType.Methods.FirstOrDefault(m => m.Name == newMethodName);
 
             if (existingMethod == null)
@@ -241,9 +266,15 @@ namespace Injector
                 }
             }
 
-            foreach (var instruction in existingMethod.Body.Instructions)
+            ChangeInstructionsPointer(existingMethod.Body.Instructions, OpCodes.Leave_S, lastInstruction, firstInserted);
+            ChangeInstructionsPointer(existingMethod.Body.Instructions, OpCodes.Brfalse_S, lastInstruction, firstInserted);
+        }
+
+        private void ChangeInstructionsPointer(Collection<Instruction> bodyInstructions, OpCode targetOpcode, Instruction lastInstruction, Instruction firstInserted)
+        {
+            foreach (var instruction in bodyInstructions)
             {
-                if (instruction.OpCode == OpCodes.Leave_S && instruction.Operand == lastInstruction)
+                if (instruction.OpCode == targetOpcode && instruction.Operand == lastInstruction)
                 {
                     instruction.Operand = firstInserted;
                 }
