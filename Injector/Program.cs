@@ -18,11 +18,37 @@ namespace Injector
                 AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey(CommandLineProcessor.InputArg));
                 string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey(CommandLineProcessor.CodeArg)));
 
-                injector.InjectMethod(targetTypeName: processor.GetValueFromKey(CommandLineProcessor.TypeArg), 
-                    methodCode: code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg), OutputKind.ConsoleApplication);
+                if (processor.KeyExists(CommandLineProcessor.EntryArg))
+                {
+                    injector.InjectMethodOnEntryPoint(code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
+                }
+                else
+                {
+                    injector.InjectMethod(targetTypeName: processor.GetValueFromKey(CommandLineProcessor.TypeArg),
+                    methodCode: code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
+                }
 
-                injector.InjectNewMethodCallInExistingMethod(processor.GetValueFromKey(CommandLineProcessor.TypeArg), "Bro", 
-                    processor.GetValueFromKey(CommandLineProcessor.MethodArg), false);
+                if (processor.KeyExists(CommandLineProcessor.InjectArg))
+                {
+                    if (processor.KeyExists(CommandLineProcessor.EntryArg))
+                    {
+                        injector.InjectNewMethodCallInExistingMethod(
+                            processor.GetValueFromKey(CommandLineProcessor.TypeArg),
+                            processor.GetValueFromKey(CommandLineProcessor.MethodArg),
+                            null,
+                            false,
+                            true
+                        );
+                    }
+                    else
+                    {
+                        injector.InjectNewMethodCallInExistingMethod(
+                            processor.GetValueFromKey(CommandLineProcessor.TypeArg), 
+                            processor.GetValueFromKey(CommandLineProcessor.MethodArg),
+                            processor.GetValueFromKey(CommandLineProcessor.InjectOnMethodArg)
+                        );
+                    }
+                }
 
                 injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
             }
