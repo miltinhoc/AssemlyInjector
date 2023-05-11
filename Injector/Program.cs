@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Injector.CommandLine;
+using Microsoft.CodeAnalysis;
 using System.IO;
 
 namespace Injector
@@ -10,16 +11,20 @@ namespace Injector
 
         static void Main(string[] args)
         {
-            CommandLine.CommandLineProcessor processor = new CommandLine.CommandLineProcessor();
+            CommandLineProcessor processor = new CommandLineProcessor();
 
             if (processor.ParseArguments(args))
             {
-                AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey("-i"));
-                string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey("-c")));
+                AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey(CommandLineProcessor.InputArg));
+                string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey(CommandLineProcessor.CodeArg)));
 
-                injector.InjectMethod(targetTypeName: processor.GetValueFromKey("-t"), methodCode: code, _className, processor.GetValueFromKey("-m"), OutputKind.ConsoleApplication);
-                injector.InjectNewMethodCallInExistingMethod(processor.GetValueFromKey("-t"), "Bro", processor.GetValueFromKey("-m"), false);
-                injector.SaveModifiedAssembly(processor.GetValueFromKey("-o"));
+                injector.InjectMethod(targetTypeName: processor.GetValueFromKey(CommandLineProcessor.TypeArg), 
+                    methodCode: code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg), OutputKind.ConsoleApplication);
+
+                injector.InjectNewMethodCallInExistingMethod(processor.GetValueFromKey(CommandLineProcessor.TypeArg), "Bro", 
+                    processor.GetValueFromKey(CommandLineProcessor.MethodArg), false);
+
+                injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
             }
         }
     }
