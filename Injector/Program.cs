@@ -1,5 +1,6 @@
 ﻿using Injector.CommandLine;
 using Microsoft.CodeAnalysis;
+using System;
 using System.IO;
 
 namespace Injector
@@ -15,6 +16,8 @@ namespace Injector
 
             if (processor.ParseArguments(args))
             {
+                Header.Draw();
+
                 AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey(CommandLineProcessor.InputArg));
                 string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey(CommandLineProcessor.CodeArg)));
 
@@ -51,6 +54,8 @@ namespace Injector
                 }
 
                 injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
+
+                Console.ReadLine();
             }
         }
     }

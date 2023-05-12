@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using Injector.Logging;
 
 namespace Injector
 {
@@ -15,31 +16,44 @@ namespace Injector
 
         public AssemblyInjector(string originalAssemblyPath)
         {
+            Logger.Print($"trying to read assembly {originalAssemblyPath}...", LogType.INFO);
+
             var assemblyResolver = new DefaultAssemblyResolver();
             var assemblyReaderParameters = new ReaderParameters { AssemblyResolver = assemblyResolver };
+
+           if (!File.Exists(originalAssemblyPath))
+           {
+                throw new FileNotFoundException($"file {originalAssemblyPath} was not found.");
+           }
+
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
         public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
+            Logger.Print($"trying to compile method '{methodName}'...", LogType.INFO);
             var tempAssembly = CompileMethod(methodCode, outputKind);
+
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
 
             if (tempMethod != null && targetType != null)
             {
+                Logger.Print($"", LogType.INFO);
                 InjectMethod(tempMethod, targetType);
             }
         }
 
         public void InjectMethodOnEntryPoint(string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
         {
+            Logger.Print($"trying to compile method '{methodName}'...", LogType.INFO);
             var tempAssembly = CompileMethod(methodCode, outputKind);
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.EntryPoint.DeclaringType;
 
             if (tempMethod != null && targetType != null)
             {
+                Logger.Print($"injecting method '{methodName}' into type '{targetType.Name}'...", LogType.INFO);
                 InjectMethod(tempMethod, targetType);
             }
         }
@@ -80,6 +94,8 @@ namespace Injector
             }
 
             ms.Seek(0, SeekOrigin.Begin);
+
+            Logger.Print($"compiled method with success", LogType.INFO);
             return AssemblyDefinition.ReadAssembly(ms);
         }
 
@@ -143,6 +159,7 @@ namespace Injector
             }
 
             targetType.Methods.Add(newMethod);
+            Logger.Print("injected with success", LogType.INFO);
         }
 
         public void InjectNewMethodCallInExistingMethod(string targetTypeName, string newMethodName, string existingMethodName, bool passArguments = false, bool entryPoint = false)

@@ -263,6 +263,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInjector.cs" />
     <Compile Include="CommandLine\CommandLineProcessor.cs" />
+    <Compile Include="Header.cs" />
+    <Compile Include="Logging\Logger.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
