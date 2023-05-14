@@ -23,9 +23,27 @@ namespace Injector.CommandLine
         /// Path for the output assembly
         /// </summary>
         public static readonly string OutputArg = "-output";
+
+        /// <summary>
+        /// The Type to inject into
+        /// </summary>
         public static readonly string TypeArg = "-type";
+
+        /// <summary>
+        /// Used to decide if we should inject on the entry point, if this is set, the argument '-type' is not needed
+        /// </summary>
         public static readonly string EntryArg = "-entry";
+
+        /// <summary>
+        /// Used to decide if we should inject a call to the newly added method, if this is used with the argument '-entry', we will inject 
+        /// our method into the entry point method, otherwise a method to inject the call needs to be defined on '-injecttomethod'
+        /// </summary>
         public static readonly string InjectArg = "-injectcall";
+
+        /// <summary>
+        /// Used to specify in what method we should inject a call to our newly created one. This will inject it at the end of the method. 
+        /// If the argument '-entry' is defined, this one will be ignored and the entry point method will be used instead.
+        /// </summary>
         public static readonly string InjectOnMethodArg = "-injectonmethod";
 
         public Dictionary<string, string> ArgumentList { get; private set; }

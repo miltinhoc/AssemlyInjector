@@ -1,5 +1,4 @@
 ﻿using Injector.CommandLine;
-using Microsoft.CodeAnalysis;
 using System;
 using System.IO;
 

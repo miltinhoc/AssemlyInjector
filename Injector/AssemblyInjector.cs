@@ -88,6 +88,7 @@ namespace Injector
             {
                 foreach (var diagnostic in emitResult.Diagnostics)
                 {
+                    Logger.Print(diagnostic.ToString(), LogType.ERROR);
                     Console.WriteLine(diagnostic);
                 }
                 throw new InvalidOperationException("Compilation failed.");
@@ -200,7 +201,7 @@ namespace Injector
             
             if (lastInstruction == null)
             {
-                throw new InvalidOperationException("The method does not have a 'ret' instruction.");
+                throw new InvalidOperationException("The method does not have a 'ret' instruction."); // not searching for the ret instruction really, but leave it like that for now
             }
 
             Instruction firstInserted = null;
