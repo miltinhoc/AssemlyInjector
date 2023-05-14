@@ -33,6 +33,8 @@ public static void NewMethod()
 }
 ```
 
+It's possible to copy the arguments of the method we inject the call into and pass them to our own. Note that is is not possible with arguments tho, manual tinkering needed.
+
 ## Todo
 - Add a way to understand what references are necessary to add depending on the code passed. (maybe with a configuration file?).
 - Find a better way  (via arguments) to copy/match arguments and pass them to the new injected method.
