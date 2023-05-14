@@ -35,4 +35,4 @@ public static void NewMethod()
 
 ## Todo
 - Add a way to understand what references are necessary to add depending on the code passed. (maybe with a configuration file?).
-- Find a better way  (via arguments) to copy arguments and pass them to the new injected method.
+- Find a better way  (via arguments) to copy/match arguments and pass them to the new injected method.
