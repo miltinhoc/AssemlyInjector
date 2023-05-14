@@ -4,9 +4,24 @@ namespace Injector.CommandLine
 {
     public class CommandLineProcessor
     {
+        /// <summary>
+        /// Name for the new injected method (should match the method named on the code passed to the '-code' arg)
+        /// </summary>
         public static readonly string MethodArg = "-method";
+
+        /// <summary>
+        /// Path for the file containing the c# code
+        /// </summary>
         public static readonly string CodeArg = "-code";
+
+        /// <summary>
+        /// Path for the input assembly
+        /// </summary>
         public static readonly string InputArg = "-input";
+
+        /// <summary>
+        /// Path for the output assembly
+        /// </summary>
         public static readonly string OutputArg = "-output";
         public static readonly string TypeArg = "-type";
         public static readonly string EntryArg = "-entry";
@@ -49,7 +64,7 @@ namespace Injector.CommandLine
 
         public bool KeyExists(string key)
         {
-            return ArgumentList.TryGetValue(key, out var value) ? true : false;
+            return ArgumentList.TryGetValue(key, out _);
         }
 
         public string GetValueFromKey(string key)
