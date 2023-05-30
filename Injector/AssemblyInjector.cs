@@ -39,7 +39,7 @@ namespace Injector
 
             if (tempMethod != null && targetType != null)
             {
-                Logger.Print($"", LogType.INFO);
+                //Logger.Print($"", LogType.INFO);
                 InjectMethod(tempMethod, targetType);
             }
         }

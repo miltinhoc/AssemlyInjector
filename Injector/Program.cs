@@ -54,7 +54,8 @@ namespace Injector
 
                 injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
 
-                Console.ReadLine();
+                Console.WriteLine("[*] Press any key to exit.");
+                Console.Read();
             }
         }
     }
