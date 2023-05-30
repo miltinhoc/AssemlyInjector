@@ -1,6 +1,9 @@
 ﻿using Injector.CommandLine;
+using Injector.Logging;
 using System;
 using System.IO;
+using System.Reflection;
+using System.Windows.Forms;
 
 namespace Injector
 {
@@ -13,50 +16,70 @@ namespace Injector
         {
             CommandLineProcessor processor = new CommandLineProcessor();
 
-            if (processor.ParseArguments(args))
+            if (!processor.ParseArguments(args))
             {
-                Header.Draw();
+                return;
+            }
 
-                AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey(CommandLineProcessor.InputArg));
-                string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey(CommandLineProcessor.CodeArg)));
+            Header.Draw();
 
+            AssemblyInjector injector = new AssemblyInjector(processor.GetValueFromKey(CommandLineProcessor.InputArg));
+            string code = string.Format(_template, _className, File.ReadAllText(processor.GetValueFromKey(CommandLineProcessor.CodeArg)));
+            int index = 0;
+
+            if (processor.KeyExists(CommandLineProcessor.MethodIndexArg))
+            {
+                index = Convert.ToInt32(processor.GetValueFromKey(CommandLineProcessor.MethodIndexArg));
+            }
+
+            if (processor.KeyExists(CommandLineProcessor.EntryArg))
+            {
+                injector.InjectMethodOnEntryPoint(code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
+            }
+            else
+            {
+                injector.InjectMethod(targetTypeName: processor.GetValueFromKey(CommandLineProcessor.TypeArg),
+                methodCode: code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
+            }
+
+            if (processor.KeyExists(CommandLineProcessor.InjectArg))
+            {
                 if (processor.KeyExists(CommandLineProcessor.EntryArg))
                 {
-                    injector.InjectMethodOnEntryPoint(code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
+                    injector.InjectNewMethodCallInExistingMethod(
+                        processor.GetValueFromKey(CommandLineProcessor.TypeArg),
+                        processor.GetValueFromKey(CommandLineProcessor.MethodArg),
+                        null,
+                        0,
+                        false,
+                        true
+                    );
                 }
                 else
                 {
-                    injector.InjectMethod(targetTypeName: processor.GetValueFromKey(CommandLineProcessor.TypeArg),
-                    methodCode: code, _className, processor.GetValueFromKey(CommandLineProcessor.MethodArg));
-                }
-
-                if (processor.KeyExists(CommandLineProcessor.InjectArg))
-                {
-                    if (processor.KeyExists(CommandLineProcessor.EntryArg))
+                    try
                     {
                         injector.InjectNewMethodCallInExistingMethod(
                             processor.GetValueFromKey(CommandLineProcessor.TypeArg),
                             processor.GetValueFromKey(CommandLineProcessor.MethodArg),
-                            null,
-                            false,
-                            true
+                            processor.GetValueFromKey(CommandLineProcessor.InjectOnMethodArg),
+                            index
                         );
                     }
-                    else
+                    catch(Exception ex)
                     {
-                        injector.InjectNewMethodCallInExistingMethod(
-                            processor.GetValueFromKey(CommandLineProcessor.TypeArg), 
-                            processor.GetValueFromKey(CommandLineProcessor.MethodArg),
-                            processor.GetValueFromKey(CommandLineProcessor.InjectOnMethodArg)
-                        );
+                        Logger.Print(ex.Message, LogType.ERROR);
+                        Console.WriteLine("[*] Application exit.");
+
+                        Environment.Exit(0);
                     }
                 }
-
-                injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
-
-                Console.WriteLine("[*] Press any key to exit.");
-                Console.Read();
             }
+
+            injector.SaveModifiedAssembly(processor.GetValueFromKey(CommandLineProcessor.OutputArg));
+
+            Console.WriteLine("[*] Press any key to exit.");
+            Console.Read();
         }
     }
 }

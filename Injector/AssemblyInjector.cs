@@ -7,6 +7,7 @@ using System.Linq;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using Injector.Logging;
+using System.Collections.Generic;
 
 namespace Injector
 {
@@ -29,25 +30,26 @@ namespace Injector
             _originalAssembly = AssemblyDefinition.ReadAssembly(originalAssemblyPath, assemblyReaderParameters);
         }
 
-        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public void InjectMethod(string targetTypeName, string methodCode, string className, string methodName)
         {
             Logger.Print($"trying to compile method '{methodName}'...", LogType.INFO);
-            var tempAssembly = CompileMethod(methodCode, outputKind);
+            var tempAssembly = CompileMethod(methodCode, OutputKind.DynamicallyLinkedLibrary);
 
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
+
             var targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
 
             if (tempMethod != null && targetType != null)
             {
-                //Logger.Print($"", LogType.INFO);
                 InjectMethod(tempMethod, targetType);
             }
         }
 
-        public void InjectMethodOnEntryPoint(string methodCode, string className, string methodName, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public void InjectMethodOnEntryPoint(string methodCode, string className, string methodName)
         {
             Logger.Print($"trying to compile method '{methodName}'...", LogType.INFO);
-            var tempAssembly = CompileMethod(methodCode, outputKind);
+            var tempAssembly = CompileMethod(methodCode, OutputKind.DynamicallyLinkedLibrary);
+
             var tempMethod = tempAssembly.MainModule.GetType(className).Methods.FirstOrDefault(m => m.Name == methodName);
             var targetType = _originalAssembly.EntryPoint.DeclaringType;
 
@@ -100,7 +102,7 @@ namespace Injector
             return AssemblyDefinition.ReadAssembly(ms);
         }
 
-        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, bool injectCall = false, string existingMethodName = "")
+        private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, bool injectCall = false, string existingMethodName = "", int index = 0)
         {
             var newMethod = new MethodDefinition(tempMethod.Name,
                 tempMethod.Attributes,
@@ -151,11 +153,21 @@ namespace Injector
 
             if (injectCall)
             {
-                var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+                MethodDefinition existingMethod = null;
+                List<MethodDefinition> methodDefinitions = targetType.Methods.Where(t => t.Name == existingMethodName).ToList();
 
-                for (int i = 0; i < existingMethod.Parameters.Count; i++)
+                if (methodDefinitions.Count >= index + 1)
                 {
-                    newMethod.Parameters.Add(existingMethod.Parameters[i]);
+                    existingMethod = methodDefinitions[index];
+                }
+                //var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+
+                if (existingMethod != null)
+                {
+                    for (int i = 0; i < existingMethod.Parameters.Count; i++)
+                    {
+                        newMethod.Parameters.Add(existingMethod.Parameters[i]);
+                    }
                 }
             }
 
@@ -163,10 +175,10 @@ namespace Injector
             Logger.Print("injected with success", LogType.INFO);
         }
 
-        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string newMethodName, string existingMethodName, bool passArguments = false, bool entryPoint = false)
+        public void InjectNewMethodCallInExistingMethod(string targetTypeName, string newMethodName, string existingMethodName, int index, bool passArguments = false, bool entryPoint = false)
         {
             TypeDefinition targetType;
-            MethodDefinition existingMethod;
+            MethodDefinition existingMethod = null;
 
             if (entryPoint)
             {
@@ -176,7 +188,13 @@ namespace Injector
             else
             {
                 targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
-                existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+                List<MethodDefinition> methodDefinitions = targetType.Methods.Where(t => t.Name == existingMethodName).ToList();
+
+                if (methodDefinitions.Count >= index + 1)
+                {
+                    existingMethod = methodDefinitions[index];
+                }
+                //existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
             }
 
             if (targetType == null)

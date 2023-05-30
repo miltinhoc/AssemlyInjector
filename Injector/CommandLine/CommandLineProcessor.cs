@@ -46,6 +46,8 @@ namespace Injector.CommandLine
         /// </summary>
         public static readonly string InjectOnMethodArg = "-injectonmethod";
 
+        public static readonly string MethodIndexArg = "-index";
+
         public Dictionary<string, string> ArgumentList { get; private set; }
 
         public CommandLineProcessor() => ArgumentList = new Dictionary<string, string>();
