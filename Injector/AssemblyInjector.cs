@@ -224,6 +224,7 @@ namespace Injector
 
             Instruction firstInserted = null;
 
+            // for now it's not possible to enter here with arguments, manual thinkering needed to match the arguments of another method
             if (passArguments)
             {
                 if (existingMethod.Parameters.Count == 0)
