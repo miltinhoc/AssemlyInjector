@@ -2,8 +2,6 @@
 using Injector.Logging;
 using System;
 using System.IO;
-using System.Reflection;
-using System.Windows.Forms;
 
 namespace Injector
 {

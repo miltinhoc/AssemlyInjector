@@ -104,24 +104,15 @@ namespace Injector
 
         private void InjectMethod(MethodDefinition tempMethod, TypeDefinition targetType, bool injectCall = false, string existingMethodName = "", int index = 0)
         {
-            var newMethod = new MethodDefinition(tempMethod.Name,
-                tempMethod.Attributes,
+            MethodDefinition newMethod = new MethodDefinition(tempMethod.Name, tempMethod.Attributes,
                 _originalAssembly.MainModule.ImportReference(tempMethod.ReturnType));
 
-            foreach (var parameter in tempMethod.Parameters)
-            {
-                var newParameter = new ParameterDefinition(parameter.Name, parameter.Attributes, _originalAssembly.MainModule.ImportReference(parameter.ParameterType));
-                newMethod.Parameters.Add(newParameter);
-            }
+            CopyParameters(ref tempMethod, ref newMethod);
+            CopyVariables(ref tempMethod, ref newMethod);
 
-            var ilProcessor = newMethod.Body.GetILProcessor();
+            ILProcessor ilProcessor = newMethod.Body.GetILProcessor();
 
-            foreach (var variable in tempMethod.Body.Variables)
-            {
-                newMethod.Body.Variables.Add(new VariableDefinition(_originalAssembly.MainModule.ImportReference(variable.VariableType)));
-            }
-
-            foreach (var instruction in tempMethod.Body.Instructions)
+            foreach (Instruction instruction in tempMethod.Body.Instructions)
             {
                 if (instruction.Operand is MethodReference methodReference)
                 {
@@ -138,18 +129,7 @@ namespace Injector
                 ilProcessor.Append(instruction);
             }
 
-            foreach (var exceptionHandler in tempMethod.Body.ExceptionHandlers)
-            {
-                newMethod.Body.ExceptionHandlers.Add(new ExceptionHandler(exceptionHandler.HandlerType)
-                {
-                    CatchType = exceptionHandler.CatchType == null ? null : _originalAssembly.MainModule.ImportReference(exceptionHandler.CatchType),
-                    TryStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.TryStart),
-                    TryEnd = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.TryEnd),
-                    HandlerStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.HandlerStart),
-                    HandlerEnd = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.HandlerEnd),
-                    FilterStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.FilterStart)
-                });
-            }
+            CopyExceptions(ref tempMethod, ref newMethod, ref ilProcessor);
 
             if (injectCall)
             {
@@ -173,6 +153,39 @@ namespace Injector
 
             targetType.Methods.Add(newMethod);
             Logger.Print("injected with success", LogType.INFO);
+        }
+
+        private void CopyParameters(ref MethodDefinition tempMethod, ref MethodDefinition newMethod)
+        {
+            foreach (var parameter in tempMethod.Parameters)
+            {
+                var newParameter = new ParameterDefinition(parameter.Name, parameter.Attributes, _originalAssembly.MainModule.ImportReference(parameter.ParameterType));
+                newMethod.Parameters.Add(newParameter);
+            }
+        }
+
+        private void CopyVariables(ref MethodDefinition tempMethod, ref MethodDefinition newMethod)
+        {
+            foreach (var variable in tempMethod.Body.Variables)
+            {
+                newMethod.Body.Variables.Add(new VariableDefinition(_originalAssembly.MainModule.ImportReference(variable.VariableType)));
+            }
+        }
+
+        private void CopyExceptions(ref MethodDefinition tempMethod, ref MethodDefinition newMethod, ref ILProcessor ilProcessor)
+        {
+            foreach (var exceptionHandler in tempMethod.Body.ExceptionHandlers)
+            {
+                newMethod.Body.ExceptionHandlers.Add(new ExceptionHandler(exceptionHandler.HandlerType)
+                {
+                    CatchType = exceptionHandler.CatchType == null ? null : _originalAssembly.MainModule.ImportReference(exceptionHandler.CatchType),
+                    TryStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.TryStart),
+                    TryEnd = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.TryEnd),
+                    HandlerStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.HandlerStart),
+                    HandlerEnd = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.HandlerEnd),
+                    FilterStart = GetCorrespondingInstruction(ilProcessor.Body.Instructions, tempMethod.Body.Instructions, exceptionHandler.FilterStart)
+                });
+            }
         }
 
         public void InjectNewMethodCallInExistingMethod(string targetTypeName, string newMethodName, string existingMethodName, int index, bool passArguments = false, bool entryPoint = false)
@@ -293,7 +306,7 @@ namespace Injector
             }
         }
 
-        private static Instruction GetCorrespondingInstruction(Mono.Collections.Generic.Collection<Instruction> newInstructions, Mono.Collections.Generic.Collection<Instruction> originalInstructions, Instruction originalInstruction)
+        private static Instruction GetCorrespondingInstruction(Collection<Instruction> newInstructions, Collection<Instruction> originalInstructions, Instruction originalInstruction)
         {
             if (originalInstruction == null)
             {
