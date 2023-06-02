@@ -1,6 +1,8 @@
 # Injector
 ![image](https://github.com/miltinhoc/AssemlyInjector/assets/26238419/e3bcce5e-43df-487a-b5e9-b4991376308c)
 
+This project lets you inject c# code (methods) into another .net assembly, it works by compiling the code in memory and then copying the IL instructions into either another chosen Type or the assembly's entry point. You can also then call your method from another existing one.
+
 ## Example
 
 Inject a Method on the assembly's entry point Type:
