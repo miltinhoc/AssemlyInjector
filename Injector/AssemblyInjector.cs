@@ -133,14 +133,7 @@ namespace Injector
 
             if (injectCall)
             {
-                MethodDefinition existingMethod = null;
-                List<MethodDefinition> methodDefinitions = targetType.Methods.Where(t => t.Name == existingMethodName).ToList();
-
-                if (methodDefinitions.Count >= index + 1)
-                {
-                    existingMethod = methodDefinitions[index];
-                }
-                //var existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
+                MethodDefinition existingMethod = GetMethodFromIndex(ref targetType, existingMethodName, index);
 
                 if (existingMethod != null)
                 {
@@ -153,6 +146,18 @@ namespace Injector
 
             targetType.Methods.Add(newMethod);
             Logger.Print("injected with success", LogType.INFO);
+        }
+
+        private MethodDefinition GetMethodFromIndex(ref TypeDefinition targetType, string existingMethodName, int index)
+        {
+            List<MethodDefinition> methodDefinitions = targetType.Methods.Where(t => t.Name == existingMethodName).ToList();
+
+            if (methodDefinitions.Count >= index + 1)
+            {
+                return methodDefinitions[index];
+            }
+
+            return null;
         }
 
         private void CopyParameters(ref MethodDefinition tempMethod, ref MethodDefinition newMethod)
@@ -201,12 +206,7 @@ namespace Injector
             else
             {
                 targetType = _originalAssembly.MainModule.Types.FirstOrDefault(t => t.Name == targetTypeName);
-                List<MethodDefinition> methodDefinitions = targetType.Methods.Where(t => t.Name == existingMethodName).ToList();
-
-                if (methodDefinitions.Count >= index + 1)
-                {
-                    existingMethod = methodDefinitions[index];
-                }
+                existingMethod = GetMethodFromIndex(ref targetType, existingMethodName, index);
                 //existingMethod = targetType.Methods.FirstOrDefault(m => m.Name == existingMethodName);
             }
 
